@@ -19,7 +19,24 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
   Future _navigateToSignInScreen() async {
     Navigator.pushReplacement(
         context, MaterialPageRoute(builder: (context) => const SignInScreen()));
+        
   }
+
+  @override
+  void initState() {
+   _authStateListener =
+        FirebaseAuth.instance.authStateChanges().listen((User? user) async {
+      if (user != null) {
+        log("User is not null in puser info screen");
+      } else {
+        log("User is null");
+        _navigateToSignInScreen();
+      }
+    });
+    super.initState();
+  }
+
+  
 
   @override
   void dispose() {
@@ -29,15 +46,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
 
   @override
   Widget build(BuildContext context) {
-    _authStateListener =
-        FirebaseAuth.instance.authStateChanges().listen((User? user) async {
-      if (user != null) {
-        log("User is not null");
-      } else {
-        log("User is null");
-        _navigateToSignInScreen();
-      }
-    });
+    
     final photoUrl = widget.user.photoURL;
     final name = widget.user.displayName;
     final phoneNumber = widget.user.phoneNumber;

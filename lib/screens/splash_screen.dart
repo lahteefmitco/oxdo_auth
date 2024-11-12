@@ -17,23 +17,21 @@ class _SplashScreenState extends State<SplashScreen> {
   late final StreamSubscription<User?> _authStateListener;
 
   Future _navigateToSignInScreen() async {
-    Navigator.pushReplacement(context,
-        MaterialPageRoute(builder: (context) => const SignInScreen()));
+    Navigator.pushReplacement(
+        context, MaterialPageRoute(builder: (context) => const SignInScreen()));
   }
 
   Future _navigateToUserInfo(User user) async {
-    Navigator.pushReplacement(context,
-        MaterialPageRoute(builder: (context) => UserInfoScreen(user: user,)));
+    Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+            builder: (context) => UserInfoScreen(
+                  user: user,
+                )));
   }
 
   @override
-  void dispose() {
-    _authStateListener.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  void initState() {
     _authStateListener =
         FirebaseAuth.instance.authStateChanges().listen((User? user) async {
       if (user == null) {
@@ -46,8 +44,27 @@ class _SplashScreenState extends State<SplashScreen> {
         await _navigateToUserInfo(user);
       }
     });
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _authStateListener.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return const Scaffold(
-      body: Center(child: Text("Splash screen")),
+      body: Center(
+        child: Text(
+          "Splash screen",
+          style: TextStyle(
+            color: Colors.amber,
+            fontSize: 25,
+          ),
+        ),
+      ),
     );
   }
 }

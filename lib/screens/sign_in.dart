@@ -18,24 +18,16 @@ class SignInScreen extends StatefulWidget {
 class _SignInScreenState extends State<SignInScreen> {
   late final StreamSubscription<User?> _authStateListener;
 
-  Future _navigateToSignUpScreen() async {
-    Navigator.pushReplacement(
-        context, MaterialPageRoute(builder: (context) => const SignUpScreen()));
-  }
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
 
-  Future _navigateToUserInfo(User user) async {
-    Navigator.pushReplacement(context,
-        MaterialPageRoute(builder: (context) =>  UserInfoScreen(user:user)));
-  }
+  bool _obscurepassword = true;
+  bool _showPrgressBar = false;
+
+  final _fomKey = GlobalKey<FormState>();
 
   @override
-  void dispose() {
-    _authStateListener.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  void initState() {
     _authStateListener =
         FirebaseAuth.instance.authStateChanges().listen((User? user) async {
       if (user != null) {
@@ -43,50 +35,236 @@ class _SignInScreenState extends State<SignInScreen> {
         await _navigateToUserInfo(user);
       }
     });
+    super.initState();
+  }
 
-    return Scaffold(
-      appBar: AppBar(
-        centerTitle: true,
-        title: const Text("Sign in"),
-        toolbarHeight: 100,
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Design google button
-            SignInButton(
-              Buttons.google,
-              shape: RoundedRectangleBorder(
-                side: const BorderSide(color: Colors.black12),
-                borderRadius: BorderRadius.circular(8),
+  @override
+  void dispose() {
+    _authStateListener.cancel();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Scaffold(
+          appBar: AppBar(
+            centerTitle: true,
+            title: const Text("Sign in"),
+            toolbarHeight: 100,
+          ),
+          body: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Form(
+                key: _fomKey,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(
+                      height: 100,
+                    ),
+                    // email
+                    TextFormField(
+                      controller: _emailController,
+                      decoration: const InputDecoration(
+                        label: Text("Email"),
+                        labelStyle: TextStyle(color: Colors.black38),
+                        floatingLabelStyle: TextStyle(color: Colors.black87),
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return "email  is empty";
+                        }
+
+                        if (!_isValidEmail(value)) {
+                          return "Enter valid email";
+                        }
+
+                        return null;
+                      },
+                    ),
+
+                    const SizedBox(
+                      height: 16,
+                    ),
+
+                    // password
+                    TextFormField(
+                      obscureText: _obscurepassword,
+                      controller: _passwordController,
+                      decoration: InputDecoration(
+                        label: const Text("Password"),
+                        labelStyle: const TextStyle(color: Colors.black38),
+                        floatingLabelStyle:
+                            const TextStyle(color: Colors.black87),
+                        suffixIcon: IconButton(
+                          onPressed: () {
+                            _obscurepassword = !_obscurepassword;
+                            setState(() {});
+                          },
+                          icon: Icon(
+                            _obscurepassword
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                          ),
+                        ),
+                        border: const OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return "Password is empty";
+                        }
+                        if (value.length < 6) {
+                          return "Password length is less than 6";
+                        }
+                        return null;
+                      },
+                    ),
+
+                    const SizedBox(
+                      height: 16,
+                    ),
+
+                    MaterialButton(
+                      onPressed: () async {
+                        FocusScope.of(context).unfocus();
+                        if (_fomKey.currentState!.validate()) {
+                          _showPrgressBar = true;
+                          setState(() {});
+                          final email = _emailController.text.trim();
+                          final password = _passwordController.text.trim();
+                          try {
+                            await _singInWithEmailAndPawword(
+                              email: email,
+                              password: password,
+                            );
+                            _showPrgressBar = false;
+                            setState(() {});
+                          } catch (e) {
+                            _showPrgressBar = false;
+                            setState(() {});
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text(e.toString())));
+                            });
+                          }
+                        }
+                      },
+                      elevation: 6,
+                      minWidth: double.infinity,
+                      color: Colors.amber,
+                      textColor: Colors.black,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                      child: const Text(
+                        "Sign in",
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ),
+
+                    const SizedBox(
+                      height: 8,
+                    ),
+                    const Text("Or"),
+                    const SizedBox(
+                      height: 8,
+                    ),
+
+                    // Design google button
+                    SignInButton(
+                      Buttons.google,
+                      shape: RoundedRectangleBorder(
+                        side: const BorderSide(color: Colors.black12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      onPressed: () {
+                        // calling sign in button
+                        _signInWithGoogle();
+                      },
+                    ),
+                    const SizedBox(
+                      height: 16,
+                    ),
+
+                    TextButton(
+                      onPressed: () {
+                        _navigateToSignUpScreen();
+                      },
+                      style: TextButton.styleFrom(
+                          textStyle: const TextStyle(
+                        color: Colors.black,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      )),
+                      child: const Text("Don't have an account?"),
+                    ),
+                    const SizedBox(
+                      height: 8,
+                    ),
+                  ],
+                ),
               ),
-              onPressed: () {
-                 // calling sign in button
-                _signInWithGoogle();
-              },
-            )
-          ],
+            ),
+          ),
         ),
-      ),
+        _showPrgressBar ? const CircularProgressIndicator() : const SizedBox()
+      ],
     );
   }
 
+  _navigateToSignUpScreen() {
+    Navigator.push(
+        context, MaterialPageRoute(builder: (context) => const SignUpScreen()));
+  }
+
+  Future _navigateToUserInfo(User user) async {
+    Navigator.pushReplacement(context,
+        MaterialPageRoute(builder: (context) => UserInfoScreen(user: user)));
+  }
+
+  bool _isValidEmail(String email) {
+    final RegExp emailRegex =
+        RegExp(r'^[\w\.-]+@[a-zA-Z\d\.-]+\.[a-zA-Z]{2,}$');
+    return emailRegex.hasMatch(email);
+  }
+
   Future<UserCredential> _signInWithGoogle() async {
-    // Trigger the authentication flow
-    final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+    try {
+      // Trigger the authentication flow
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
 
-    // Obtain the auth details from the request
-    final GoogleSignInAuthentication? googleAuth =
-        await googleUser?.authentication;
+      // Obtain the auth details from the request
+      final GoogleSignInAuthentication? googleAuth =
+          await googleUser?.authentication;
 
-    // Create a new credential
-    final credential = GoogleAuthProvider.credential(
-      accessToken: googleAuth?.accessToken,
-      idToken: googleAuth?.idToken,
-    );
+      // Create a new credential
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth?.accessToken,
+        idToken: googleAuth?.idToken,
+      );
 
-    // Once signed in, return the UserCredential
-    return await FirebaseAuth.instance.signInWithCredential(credential);
+      // Once signed in, return the UserCredential
+      return await FirebaseAuth.instance.signInWithCredential(credential);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future _singInWithEmailAndPawword({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      await FirebaseAuth.instance
+          .signInWithEmailAndPassword(email: email, password: password);
+    } catch (e) {
+      rethrow;
+    }
   }
 }
