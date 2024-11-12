@@ -25,7 +25,19 @@ class _SignInScreenState extends State<SignInScreen> {
 
   Future _navigateToUserInfo(User user) async {
     Navigator.pushReplacement(context,
-        MaterialPageRoute(builder: (context) =>  UserInfoScreen(user:user)));
+        MaterialPageRoute(builder: (context) => UserInfoScreen(user: user)));
+  }
+
+  @override
+  void initState() {
+    _authStateListener =
+        FirebaseAuth.instance.authStateChanges().listen((User? user) async {
+      if (user != null) {
+        log("User is not null");
+        await _navigateToUserInfo(user);
+      }
+    });
+    super.initState();
   }
 
   @override
@@ -36,14 +48,6 @@ class _SignInScreenState extends State<SignInScreen> {
 
   @override
   Widget build(BuildContext context) {
-    _authStateListener =
-        FirebaseAuth.instance.authStateChanges().listen((User? user) async {
-      if (user != null) {
-        log("User is not null");
-        await _navigateToUserInfo(user);
-      }
-    });
-
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
@@ -62,7 +66,7 @@ class _SignInScreenState extends State<SignInScreen> {
                 borderRadius: BorderRadius.circular(8),
               ),
               onPressed: () {
-                 // calling sign in button
+                // calling sign in button
                 _signInWithGoogle();
               },
             )

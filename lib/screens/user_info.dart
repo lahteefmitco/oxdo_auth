@@ -28,8 +28,8 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    _authStateListener =
+  void initState() {
+       _authStateListener =
         FirebaseAuth.instance.authStateChanges().listen((User? user) async {
       if (user != null) {
         log("User is not null");
@@ -38,6 +38,12 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
         _navigateToSignInScreen();
       }
     });
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+ 
     final photoUrl = widget.user.photoURL;
     final name = widget.user.displayName;
     final phoneNumber = widget.user.phoneNumber;
